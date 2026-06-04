@@ -42,7 +42,7 @@ export default function BookPage() {
           </div>
           <div className="card p-6">
             <h2 className="font-display text-lg font-semibold text-maroon">Prefer to call?</h2>
-            <p className="mt-2 text-[14px] text-ink-soft">We pick up between {`12pm – 9pm`}.</p>
+            <p className="mt-2 text-[14px] text-ink-soft">We answer during opening hours — Mon &amp; Wed–Sun from 12pm, Tue from 4pm.</p>
             <a href={`tel:${business.phone.e164}`} className="btn-primary mt-4 w-full">
               <Phone className="h-4 w-4" /> {business.phone.display}
             </a>

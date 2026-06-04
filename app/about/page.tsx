@@ -36,8 +36,8 @@ export default function AboutPage() {
             <p className="mt-5 max-w-xl text-[17px] text-white/[0.85]">
               We opened in Mawson because we missed the food of home. Today,
               ours is the kitchen our regulars say feels like Bhutan — handmade
-              momos pleated each morning, smoky ema datshi, slow-simmered paa,
-              and a karaoke room on weekend nights.
+              momos pleated fresh each morning, smoky ema datshi, and
+              slow-simmered paa curries made with love.
             </p>
             <BhutanDivider className="mt-8 text-saffron/60" />
           </div>

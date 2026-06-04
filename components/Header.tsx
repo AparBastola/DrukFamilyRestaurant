@@ -8,6 +8,7 @@ import StatusChip from './StatusChip';
 import { business } from '@/lib/business';
 
 const nav = [
+  { href: '/', label: 'Home' },
   { href: '/menu', label: 'Menu' },
   { href: '/book', label: 'Reservations' },
   { href: '/order', label: 'Order' },

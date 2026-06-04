@@ -56,7 +56,7 @@ export default function HomePage() {
               </Link>
             </div>
             <p className="mt-6 text-[13px] uppercase tracking-[0.18em] text-white/60">
-              Canberra’s original Bhutanese restaurant · est. as Mawson’s home of momos
+              Canberra’s original Bhutanese restaurant · Mawson’s home of momos
             </p>
           </div>
         </div>
@@ -127,11 +127,11 @@ export default function HomePage() {
           <div>
             <p className="eyebrow !text-saffron">Reservations</p>
             <h2 className="mt-2 font-display text-3xl font-semibold text-white sm:text-4xl text-balance">
-              Reserve your table at the Druk family table.
+              Join us at the Druk family table.
             </h2>
             <p className="mt-3 max-w-xl text-white/[0.85]">
-              We accept bookings for 1–8 guests. Larger groups (and the karaoke
-              room) are very welcome — please call us.
+              We take bookings for 1–8 guests. Larger groups and karaoke nights
+              are very welcome — just give us a call.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link href="/book" className="btn-primary bg-saffron !text-maroon-deep hover:bg-gold">
