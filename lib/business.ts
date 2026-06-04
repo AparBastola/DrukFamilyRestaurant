@@ -57,4 +57,4 @@ export const business = {
 export type Hours = (typeof business.hours)[number];
 
 export const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ?? 'https://drukfamily.com.au';
+  process.env.NEXT_PUBLIC_SITE_URL || 'https://drukfamily.com.au';

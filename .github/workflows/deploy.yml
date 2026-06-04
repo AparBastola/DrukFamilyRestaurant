@@ -27,26 +27,33 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Detect base path
-        id: basepath
+      - name: Detect base path and site URL
+        id: site
         # If the repo is "<user>.github.io" it deploys at root → no basePath.
         # Otherwise it's a project page → basePath = "/<repo-name>".
+        # SITE_URL falls back to the GitHub Pages URL so the build never sees
+        # an empty string (which would break `new URL(siteUrl)` in metadata).
         run: |
           REPO="${GITHUB_REPOSITORY##*/}"
           OWNER="${GITHUB_REPOSITORY%%/*}"
-          if [ "$REPO" = "${OWNER}.github.io" ]; then
+          OWNER_LOWER="$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')"
+          if [ "$REPO" = "${OWNER_LOWER}.github.io" ] || [ "$REPO" = "${OWNER}.github.io" ]; then
             echo "base=" >> "$GITHUB_OUTPUT"
+            DEFAULT_URL="https://${OWNER_LOWER}.github.io"
           else
             echo "base=/$REPO" >> "$GITHUB_OUTPUT"
+            DEFAULT_URL="https://${OWNER_LOWER}.github.io/$REPO"
           fi
+          USER_URL="${{ vars.SITE_URL }}"
+          echo "url=${USER_URL:-$DEFAULT_URL}" >> "$GITHUB_OUTPUT"
 
       - name: Install dependencies
         run: npm ci
 
       - name: Build static export
         env:
-          NEXT_PUBLIC_BASE_PATH: ${{ steps.basepath.outputs.base }}
-          NEXT_PUBLIC_SITE_URL: ${{ vars.SITE_URL }}
+          NEXT_PUBLIC_BASE_PATH: ${{ steps.site.outputs.base }}
+          NEXT_PUBLIC_SITE_URL: ${{ steps.site.outputs.url }}
           NEXT_PUBLIC_CONTACT_ENDPOINT: ${{ vars.CONTACT_ENDPOINT }}
           NEXT_PUBLIC_RESERVATIONS_ENDPOINT: ${{ vars.RESERVATIONS_ENDPOINT }}
         run: npm run build
