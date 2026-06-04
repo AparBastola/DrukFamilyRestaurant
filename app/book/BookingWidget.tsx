@@ -88,16 +88,41 @@ export default function BookingWidget() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (oversized) return; // routed to phone instead
+
+    // Set NEXT_PUBLIC_RESERVATIONS_ENDPOINT to a form-handler URL (Formspree,
+    // Web3Forms, etc.) for live bookings. Without it we fall back to mailto.
+    const ENDPOINT = process.env.NEXT_PUBLIC_RESERVATIONS_ENDPOINT;
+
+    if (!ENDPOINT) {
+      const conf = `DF-${Date.now().toString(36).toUpperCase().slice(-6)}`;
+      const subject = encodeURIComponent(`Reservation request — ${form.name} (${form.partySize} guests)`);
+      const lines = [
+        `Date: ${form.date}`,
+        `Time: ${form.time}`,
+        `Party size: ${form.partySize}`,
+        `Name: ${form.name}`,
+        `Phone: ${form.phone}`,
+        `Email: ${form.email}`,
+        `High chair: ${form.highChair ? 'yes' : 'no'}`,
+        `Marketing consent: ${form.marketingConsent ? 'yes' : 'no'}`,
+        `Notes: ${form.notes || '—'}`,
+        `Local ref: ${conf}`,
+      ];
+      window.location.href = `mailto:${business.email}?subject=${subject}&body=${encodeURIComponent(lines.join('\n'))}`;
+      setStatus({ kind: 'success', confirmation: conf });
+      return;
+    }
+
     setStatus({ kind: 'submitting' });
     try {
-      const res = await fetch('/api/reservations', {
+      const res = await fetch(ENDPOINT, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify(form),
       });
-      const data = await res.json();
-      if (data.ok) {
-        setStatus({ kind: 'success', confirmation: data.confirmationNumber });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && (data.ok ?? true)) {
+        setStatus({ kind: 'success', confirmation: data.confirmationNumber ?? `DF-${Date.now().toString(36).toUpperCase().slice(-6)}` });
       } else {
         setStatus({ kind: 'error', message: data.message ?? 'Something went wrong.', fieldErrors: data.fieldErrors });
       }

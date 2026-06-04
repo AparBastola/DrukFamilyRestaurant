@@ -32,8 +32,6 @@ app/                       # App Router pages
   order/                   # DoorDash + Uber Eats deep-link cards
   about/   reviews/        # Brand story, testimonials
   gallery/ contact/        # Lightbox gallery, contact form
-  api/reservations/route.ts   # Mock reservations endpoint
-  api/contact/route.ts        # Stub contact endpoint
   sitemap.ts  robots.ts       # Generated /sitemap.xml + /robots.txt
 
 components/                # Reusable UI (Header, Footer, DishCard, …)
@@ -55,7 +53,8 @@ The site ships demo-ready. Everywhere a real value is needed, you'll find a
 | **Uber Eats store URL** | `lib/business.ts` → `delivery.ubereats` | Paste the official listing URL |
 | **Logo** | `public/images/logo.jpg` | Replace with vectorised SVG (recommended) or hi-res PNG |
 | **Food / interior photos** | `app/gallery/GalleryClient.tsx` | Replace `tiles[]` with `<img src="/images/…" />` entries |
-| **Email + contact endpoint** | `lib/business.ts` (`email`) · `app/api/contact/route.ts` | Forward POSTs to Resend / Formspree / etc. |
+| **Email + contact endpoint** | `lib/business.ts` (`email`) · `NEXT_PUBLIC_CONTACT_ENDPOINT` | Set to a Formspree / Web3Forms URL. Unset = mailto fallback. |
+| **Reservations endpoint** | `NEXT_PUBLIC_RESERVATIONS_ENDPOINT` | Same — third-party form handler, or mailto fallback. |
 | **Reservations backend** | `lib/reservations.ts` | See *Swappable reservations* below |
 | **Google rating + count** | `data/testimonials.ts` → `aggregateRating` | Update manually or wire to Google Places API |
 | **Site URL** | `NEXT_PUBLIC_SITE_URL` env var | Set in `.env.production.local` before deploy |
@@ -85,27 +84,25 @@ Typography uses Google Fonts via `next/font` (zero-FOIT, no privacy leakage):
 
 ---
 
-## Swappable reservations adapter
+## Forms (contact + reservations)
 
-`lib/reservations.ts` exposes a single interface:
+Because the site is statically exported for GitHub Pages, there's no server to
+receive form posts. Two options:
 
-```ts
-interface ReservationAdapter {
-  create(payload: ReservationPayload): Promise<ReservationResult | ReservationError>;
-}
-```
+1. **Plug in a third-party form handler** — sign up for
+   [Formspree](https://formspree.io), [Web3Forms](https://web3forms.com) or
+   similar, then set in your repo:
+   - **Settings → Secrets and variables → Actions → Variables**
+     - `CONTACT_ENDPOINT` = your contact form URL
+     - `RESERVATIONS_ENDPOINT` = your reservations form URL
+   The deploy workflow injects these as `NEXT_PUBLIC_CONTACT_ENDPOINT` /
+   `NEXT_PUBLIC_RESERVATIONS_ENDPOINT` at build time.
 
-A `mockAdapter` is registered by default — it sleeps 700ms then returns a
-6-digit confirmation. To swap in a real provider (ResDiary, Now Book It,
-OpenTable, your own DB), implement the interface and replace the `adapter`
-binding at the bottom of the file. Validation, opening-hours logic and the
-booking UI all stay the same.
+2. **Do nothing** — if the env vars are unset, both forms open the visitor's
+   email client with their submission pre-filled (`mailto:`). The restaurant
+   then confirms by phone or email. Lower fidelity, zero setup.
 
-The API route at `app/api/reservations/route.ts` runs:
-1. Required-field check
-2. AU phone + email format validation
-3. Date is open + time is within hours minus the close buffer
-4. Then delegates to the adapter
+Client-side validation (AU phone, email, opening hours) still runs either way.
 
 ---
 
@@ -136,17 +133,43 @@ before deploying so canonical URLs and JSON-LD point at the right host.
 
 ---
 
-## Deploying
+## Deploying to GitHub Pages
 
-Any Node host works. Vercel / Netlify are easiest:
+This repo ships with a GitHub Actions workflow at
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) that builds the
+static site (`next build` with `output: 'export'`) and deploys it to GitHub
+Pages on every push to `main`.
+
+**One-time setup**
+
+1. Push the repo to GitHub.
+2. **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+3. (Optional) **Settings → Secrets and variables → Actions → Variables** —
+   add:
+   - `SITE_URL` — e.g. `https://drukfamily.com.au` (used for canonical URLs,
+     OG tags, JSON-LD). Skip for a `*.github.io` URL.
+   - `CONTACT_ENDPOINT` / `RESERVATIONS_ENDPOINT` — see *Forms* above.
+4. Push to `main`. The workflow runs, builds, and publishes.
+
+**Base path handling**
+
+GitHub Pages serves project repos under `https://<user>.github.io/<repo>/`. The
+workflow auto-detects the repo name and passes it as `NEXT_PUBLIC_BASE_PATH`
+so all internal links + asset URLs resolve correctly. For a user/org page
+(`<user>.github.io`) or a custom domain, the base path is empty automatically.
+
+**Custom domain**
+
+Add a `public/CNAME` file containing your domain (e.g. `drukfamily.com.au`),
+then point a DNS `CNAME` record at `<user>.github.io`. GitHub Pages will pick
+it up. Also set the `SITE_URL` variable to the custom domain.
+
+**Local build**
 
 ```bash
 NEXT_PUBLIC_SITE_URL=https://drukfamily.com.au npm run build
-npm run start
+npx serve out   # preview the static export
 ```
-
-The reservations and contact endpoints run as serverless routes — no extra
-infrastructure needed for the demo.
 
 ---
 

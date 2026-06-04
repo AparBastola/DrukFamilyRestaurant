@@ -1,8 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import { business } from '@/lib/business';
 
 type Status = { kind: 'idle' } | { kind: 'sending' } | { kind: 'sent' } | { kind: 'error'; msg: string; errors?: Record<string, string> };
+
+// Set NEXT_PUBLIC_CONTACT_ENDPOINT in .env (and as a GitHub Actions secret/var)
+// to a form-handler URL — e.g. Formspree (https://formspree.io) or Web3Forms.
+// When unset, the form posts via mailto: so the site still works on GitHub Pages.
+const ENDPOINT = process.env.NEXT_PUBLIC_CONTACT_ENDPOINT;
 
 export default function ContactForm() {
   const [name, setName] = useState('');
@@ -12,15 +18,22 @@ export default function ContactForm() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!ENDPOINT) {
+      const subject = encodeURIComponent(`Website enquiry from ${name || 'a guest'}`);
+      const body = encodeURIComponent(`${message}\n\n— ${name} (${email})`);
+      window.location.href = `mailto:${business.email}?subject=${subject}&body=${body}`;
+      setStatus({ kind: 'sent' });
+      return;
+    }
     setStatus({ kind: 'sending' });
     try {
-      const res = await fetch('/api/contact', {
+      const res = await fetch(ENDPOINT, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ name, email, message }),
       });
-      const data = await res.json();
-      if (data.ok) setStatus({ kind: 'sent' });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && (data.ok ?? true)) setStatus({ kind: 'sent' });
       else setStatus({ kind: 'error', msg: 'Please check the fields below.', errors: data.errors });
     } catch {
       setStatus({ kind: 'error', msg: 'Network error. Please try again or call us.' });
